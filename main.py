@@ -73,15 +73,15 @@ cite_row = interactions.ActionRow(
 
 ######### COMMANDS ############
 
-# @bot.command(
-#     name="search",
-#     description="Search for an article on sci-hub.",
-# )
-# async def search(ctx):
-#     embed = interactions.Embed(
-#         title="Search for an article on sci-hub.",
-#         description="Please select the type of search you would like to perform.")
-#     await ctx.send(embeds=[embed], components=[search_options], ephemeral=True)
+@bot.command(
+    name="search",
+    description="Search for an article on sci-hub.",
+)
+async def search(ctx):
+    embed = interactions.Embed(
+        title="Search for an article on sci-hub.",
+        description="Please select the type of search you would like to perform.")
+    await ctx.send(embeds=[embed], components=[search_options], ephemeral=True)
 
 
 @bot.command(
