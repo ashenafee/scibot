@@ -76,7 +76,6 @@ cite_row = interactions.ActionRow(
 @bot.command(
     name="search",
     description="Search for an article on sci-hub.",
-    scope=886372445957795900
 )
 async def search(ctx):
     embed = interactions.Embed(
