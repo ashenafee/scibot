@@ -1,8 +1,12 @@
 import interactions
 import os
+import json
+import requests
 from dotenv import load_dotenv
 from interactions import Client
 
+
+CROSSREF = "https://api.crossref.org/works/"
 
 load_dotenv()
 bot = Client(token=os.getenv("DISCORD_BOT_TOKEN"))
@@ -45,6 +49,28 @@ search_row = interactions.ActionRow(
     components=[back_button, search_button],
 )
 
+cse_button = interactions.Button(
+    style=interactions.ButtonStyle.PRIMARY,
+    label="CSE",
+    custom_id="cse_button"
+)
+
+mla_button = interactions.Button(
+    style=interactions.ButtonStyle.PRIMARY,
+    label="MLA",
+    custom_id="mla_button"
+)
+
+apa_button = interactions.Button(
+    style=interactions.ButtonStyle.PRIMARY,
+    label="APA",
+    custom_id="apa_button"
+)
+
+cite_row = interactions.ActionRow(
+    components=[cse_button, mla_button, apa_button],
+)
+
 ######### COMMANDS ############
 
 @bot.command(
@@ -56,6 +82,37 @@ async def search(ctx):
         title="Search for an article on sci-hub.",
         description="Please select the type of search you would like to perform.")
     await ctx.send(embeds=[embed], components=[search_options], ephemeral=True)
+
+
+@bot.command(
+    name="cite",
+    description="Cite an article, given a DOI",
+    options=[
+        interactions.Option(
+            name="doi",
+            description="The DOI of the article you would like to cite.",
+            type=interactions.OptionType.STRING,
+            required=True
+        )
+    ],
+    scope=886372445957795900
+)
+async def cite(ctx, doi):
+    # TODO: Extract this into a function
+    # Add metadata and user ID to the database
+    with open("cite.json", "r") as f:
+        cite_data = json.load(f)
+        cite_data[ctx.author.id._snowflake] = doi
+    
+    with open("cite.json", "w") as f:
+        json.dump(cite_data, f, indent=4)
+    
+    # Crossref does not provide volume or pages
+
+    embed = interactions.Embed(
+        title="Cite an article.",
+        description="Please select the type of citation you would like to perform.")
+    await ctx.send(embeds=[embed], components=[cite_row], ephemeral=True)
 
 ######## COMPONENTS ###########
 
@@ -112,6 +169,50 @@ async def fsearch_url(ctx):
         description="Please enter the URL of the article you would like to search for."
     )
     await ctx.edit(embeds=[embed], components=[search_row])
+
+@bot.component("cse_button")
+async def fcse_button(ctx):
+    # Get DOI from database
+    with open("cite.json", "r") as f:
+        data = json.load(f)
+    doi = data[ctx.author.id._snowflake]
+
+    response = requests.get(CROSSREF + doi)
+
+    # Parse metadata into JSON
+    metadata = response.json()
+    metadata = metadata['message']
+    
+    title = metadata['title'][0]
+    publisher = metadata['publisher']
+    publishYear = metadata['published']['date-parts'][0][0]
+    journal = metadata['short-container-title'][0]
+
+    authors_list = metadata['author']
+    authors = ""
+    for author in authors_list:
+        authors += author['given'] + " " + author['family'] + ", "
+    authors = authors[:-2]
+
+    embed = interactions.Embed(
+        title=f"CSE Citation.",
+        description=f"Your citation for `{doi}`:",
+        fields=[interactions.EmbedField(
+            name="Citation",
+            value=f"{authors}. {publishYear}. {title}. {journal} **VOL|ISS: PGS**",
+            inline=False
+        ), interactions.EmbedField(
+            name="Required",
+            value="> ∙ Volume\n> ∙ Issue\n> ∙ Pages",
+            inline=True
+        ), interactions.EmbedField(
+            name="Access",
+            value=f"Find the required fields [here](https://sci-hub.mksa.top/{doi}).",
+            inline=True
+        )]
+    )
+
+    await ctx.send(embeds=[embed], ephemeral=True)
 
 ########### MODALS ############
 
