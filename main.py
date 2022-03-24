@@ -95,7 +95,6 @@ async def search(ctx):
             required=True
         )
     ],
-    scope=886372445957795900
 )
 async def cite(ctx, doi):
     # TODO: Extract this into a function
@@ -230,3 +229,4 @@ async def fsearch_modal(ctx, response: str):
     await ctx.send(embeds=[embed], ephemeral=True)
 
 bot.start()
+print("Sci-Bot is live!")
